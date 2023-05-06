@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "back-dt-money",
+  "builds": [
+     { "src": "src/app.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+     { "src": "/(.*)", "dest": "src/app.js" }
+  ]
+}
