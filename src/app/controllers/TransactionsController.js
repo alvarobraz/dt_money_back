@@ -33,8 +33,8 @@ module.exports = {
 
   async get(req, res) {
 
-    console.log(req.query)
-    // try {
+    // console.log(req.query)
+    try {
 
       const { 
         _sort,
@@ -80,15 +80,15 @@ module.exports = {
       }
 
       const TransactionSearch = await TransactionService
-      .get(filter, sort, Number(page), Number(limit))
+      .get(filter, _sort, Number(page), Number(limit))
   
       // const TransactionSearch =  await Transaction.find().sort({createdAt:-1})
 
       return res.json(TransactionSearch)
 
-    // } catch (error) {
-    //   return res.status(400).json({ error });
-    // }
+    } catch (error) {
+      return res.status(400).json({ error });
+    }
      
   },
 
@@ -105,93 +105,57 @@ module.exports = {
 
   },
 
-  async summary(req, res) {
+  async update(req, res) {
 
-    // try {
+    const session = await req.conn.startSession();
+    try {
 
-      const TransactionsGetOne = await Transaction.aggregate([
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$price" }
-          }
+      session.startTransaction();
+
+      if(!await Transaction.findOne({ _id: req.params.id })) {
+        return res.status(400).send({ error: 'Nenhuma transação encontrada com este id' });
+      }
+
+      if(req.body.description !== undefined) {
+
+        const description = req.body.description.trim().toLowerCase();
+        const searchTransactions = await Transaction.findOne({ description: { $regex: new RegExp(description, 'i') } });
+        if(searchTransactions) {
+          return res.status(400).send({ error: `Já existe uma transação com este nome: ${searchTransactions.description}` });
         }
-      ])
-      return res.json(TransactionsGetOne)
+      }
 
-    // } catch (error) {
-    //   return res.status(400).json({ error });
-    // }
+      await Transaction.updateOne({ _id: req.params.id }, req.body, { session })
+      await session.commitTransaction();
+      return res.json({ message: "Transação alterada!" })
+
+    } catch (error) {
+      console.log(error);
+      await session.abortTransaction();
+      res.status(400).json(error);;
+    }
+    session.endSession();
 
   },
 
-  // async update(req, res) {
+  async destroy(req, res) {
 
-  //   const session = await req.conn.startSession();
-  //   try {
+    const session = await req.conn.startSession();
+    try {
 
-  //     session.startTransaction();
-  //     const { user } = req.auth;
-  //     if (user.role !== "admin") {
-  //       return res.status(400).send({
-  //         error: true,
-  //         message: `Acesso negado, somente administradores podem editar uma música!`
-  //       });
-  //     }
+      session.startTransaction();
 
-  //     if(req.body.category !== undefined) {
+      await Transaction.deleteOne({ _id: req.params.id })
+      await session.commitTransaction();
+      return res.status(204).send({ message: `A transação foi deletada!` });
 
-  //       const searchCategory = await TransactionCategory.findOne({_id: req.body.category, status: 'active'})
-  //       if(searchCategory === null) {
-  //         return res.status(400).send({
-  //           error: true,
-  //           message: 'Category does not exist!'
-  //         });
-  //       }
-  //       req.body.category = {
-  //         _id: searchCategory._id,
-  //         name: searchCategory.name
-  //       }
+    } catch (error) {
+      console.log(error);
+      await session.abortTransaction();
+      res.status(400).json(error);
+    }
+    session.endSession();
 
-  //     }
-
-  //     await Transaction.updateOne({ _id: req.params.id }, req.body, { session})
-  //     await session.commitTransaction();
-  //     return res.json({ message: "Música alterada!" })
-
-  //   } catch (error) {
-  //     console.log(error);
-  //     await session.abortTransaction();
-  //     res.status(400).json(error);;
-  //   }
-  //   session.endSession();
-
-  // },
-
-  // async destroy(req, res) {
-
-  //   const session = await req.conn.startSession();
-  //   try {
-
-  //     session.startTransaction();
-  //     const { user } = req.auth;
-  //     if (user.role !== "admin") {
-  //       return res.status(400).send({
-  //         error: true,
-  //         message: `Acesso negado, somente administradores podem deletar uma música!`
-  //       });
-  //     }
-  //     await Transaction.findOneAndUpdate({ _id: req.params.id }, { status: "inactive" })
-  //     await session.commitTransaction();
-  //     return res.status(204).send({ message: `A musíca foi desativada!` });
-
-  //   } catch (error) {
-  //     console.log(error);
-  //     await session.abortTransaction();
-  //     res.status(400).json(error);
-  //   }
-  //   session.endSession();
-
-  // }
+  }
 
 }

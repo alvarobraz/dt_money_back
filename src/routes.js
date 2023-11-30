@@ -18,9 +18,14 @@ routes.get(
   TransactionsController.show
 );
 
-routes.get(
-  "/transactionssummary",
-  TransactionsController.summary
+routes.put(
+  "/transactions/:id",
+  TransactionsController.update
+);
+
+routes.delete(
+  "/transactions/:id",
+  TransactionsController.destroy
 );
 
 // routes.put(
