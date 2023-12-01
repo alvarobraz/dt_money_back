@@ -112,16 +112,16 @@ module.exports = {
 
       session.startTransaction();
 
-      if(!await Transaction.findOne({ _id: req.params.id })) {
-        return res.status(400).send({ error: 'Nenhuma transação encontrada com este id' });
-      }
-
-      if(req.body.description !== undefined) {
-
+      if (req.body.description !== undefined) {
         const description = req.body.description.trim().toLowerCase();
-        const searchTransactions = await Transaction.findOne({ description: { $regex: new RegExp(description, 'i') } });
-        if(searchTransactions) {
-          return res.status(400).send({ error: `Já existe uma transação com este nome: ${searchTransactions.description}` });
+        const searchTransactions = await Transaction.findOne({
+          description: { $regex: new RegExp(`^${description}$`, 'i') }
+        });
+      
+        if (searchTransactions) {
+          return res.status(400).send({
+            error: `Já existe uma transação com este nome: ${searchTransactions.description}`
+          });
         }
       }
 
