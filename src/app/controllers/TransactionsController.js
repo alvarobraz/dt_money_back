@@ -115,12 +115,13 @@ module.exports = {
       if (req.body.description !== undefined) {
         const description = req.body.description.trim().toLowerCase();
         const searchTransactions = await Transaction.findOne({
-          description: { $regex: new RegExp(`^${description}$`, 'i') }
+          description: { $regex: new RegExp(`^${description}$`, 'i') },
+          _id: { $ne: req.params.id }
         });
       
         if (searchTransactions) {
           return res.status(400).send({
-            error: `Já existe uma transação com este nome: ${searchTransactions.description}`
+            error: `Já existe uma transação com este nome!`
           });
         }
       }
